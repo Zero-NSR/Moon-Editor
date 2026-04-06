@@ -7,50 +7,61 @@
     <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/vs/editor/editor.main.min.css">
     <style>
         :root { --bg: #0b0e14; --side: #151921; --accent: #3498db; --text: #e0e0e0; }
+        * { box-sizing: border-box; }
         body { margin: 0; background: var(--bg); color: var(--text); font-family: sans-serif; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
         
-        .navbar { height: 50px; background: var(--side); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #2d3436; flex-shrink: 0; }
-        .logo { font-weight: bold; color: #fff; font-size: 0.9rem; }
+        .navbar { height: 45px; background: var(--side); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #2d3436; flex-shrink: 0; }
+        .logo { font-weight: bold; color: #fff; font-size: 14px; }
 
-        .main { display: flex; flex: 1; overflow: hidden; }
-        #editor { flex: 1; height: 100%; }
+        .main-container { display: flex; flex: 1; overflow: hidden; position: relative; flex-direction: row; }
+        #editor { flex: 1; width: 100%; height: 100%; }
 
-        /* تعديل لوحة الـ AI لتناسب الشاشات الصغيرة */
-        .ai-sidebar { width: 300px; background: var(--side); display: flex; flex-direction: column; padding: 10px; border-left: 1px solid #2d3436; overflow-y: auto; }
+        /* تعديل لوحة الـ AI لتكون جانبية في البي سي وسفلية في الجوال */
+        .ai-sidebar { width: 300px; background: var(--side); display: flex; flex-direction: column; padding: 12px; border-left: 1px solid #2d3436; flex-shrink: 0; overflow-y: auto; }
         
-        input, textarea { width: 100%; background: #0b0e14; color: #fff; border: 1px solid #3d444d; border-radius: 6px; padding: 8px; margin-bottom: 8px; font-size: 13px; outline: none; }
-        button { width: 100%; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 5px; font-size: 12px; }
+        input, textarea { width: 100%; background: #0b0e14; color: #fff; border: 1px solid #3d444d; border-radius: 6px; padding: 10px; margin-bottom: 8px; font-size: 14px; outline: none; }
+        button { width: 100%; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 5px; font-size: 13px; }
         
         .gen { background: var(--accent); color: white; }
         .copy { background: #27ae60; color: white; }
+        #status { font-size: 11px; text-align: center; color: #888; }
 
-        /* شريط الأدوات السريع للكيبورد */
-        .toolbar { display: none; background: #252526; padding: 5px; gap: 5px; overflow-x: auto; border-top: 1px solid #333; }
-        .tool-btn { background: #333; color: white; padding: 5px 12px; border-radius: 4px; font-size: 14px; border: none; }
+        /* شريط الرموز السريع */
+        .toolbar { display: flex; background: #1e1e1e; padding: 5px; gap: 8px; overflow-x: auto; border-top: 1px solid #333; flex-shrink: 0; }
+        .tool-btn { background: #333; color: white; padding: 8px 15px; border-radius: 5px; font-size: 16px; border: none; font-family: monospace; }
 
-        @media (max-width: 768px) {
-            .main { flex-direction: column-reverse; } /* المحرر فوق والـ AI تحت */
-            .ai-sidebar { width: 100%; height: auto; max-height: 35%; border-left: none; border-top: 1px solid #2d3436; }
-            .toolbar { display: flex; }
+        /* أهم جزء: استجابة الآيباد والجوال */
+        @media (max-width: 900px) {
+            .main-container { flex-direction: column; } /* ترتيب عمودي */
+            .ai-sidebar { 
+                width: 100%; 
+                height: 220px; /* طول ثابت للـ AI عشان ما يغطي الشاشة */
+                border-left: none; 
+                border-top: 1px solid #2d3436; 
+                order: 2; /* الـ AI تحت */
+            }
+            #editor { order: 1; flex: 1; } /* المحرر فوق وياخذ باقي المساحة */
         }
     </style>
 </head>
 <body>
 
     <div class="navbar">
-        <div style="color:var(--accent); cursor:pointer" onclick="toggleAI()">≡</div>
+        <div style="color:var(--accent); cursor:pointer; font-size: 20px;" onclick="toggleAI()">≡</div>
         <div class="logo">🌙 MOON EDITOR</div>
-        <div id="api-indicator" style="font-size: 8px; color: #ff4757;">Key Required ⚠️</div>
+        <div id="api-indicator" style="font-size: 10px; color: #ff4757;">⚠️</div>
     </div>
 
-    <div class="main">
+    <div class="main-container">
         <div id="editor"></div>
+
         <div class="ai-sidebar" id="aiSidebar">
-            <input type="password" id="apiKeyInput" placeholder="API Key...">
-            <button style="font-size:10px; background:#444; color:#ccc" onclick="saveKey()">حفظ المفتاح 💾</button>
-            <textarea id="prompt" rows="2" placeholder="اطلب كود..."></textarea>
+            <input type="password" id="apiKeyInput" placeholder="أدخل API Key...">
+            <button style="font-size:10px; background:#444; color:#ccc; padding: 5px;" onclick="saveKey()">حفظ المفتاح 💾</button>
+            <textarea id="prompt" rows="2" placeholder="اطلب كود (مثلاً: كود طيران)"></textarea>
             <button class="gen" onclick="generateCode()">توليد ✨</button>
             <button class="copy" onclick="copyAll()">نسخ 📋</button>
+            <p id="status">جاهز</p>
         </div>
     </div>
 
@@ -60,8 +71,10 @@
         <button class="tool-btn" onclick="insertText(')')">)</button>
         <button class="tool-btn" onclick="insertText(':')">:</button>
         <button class="tool-btn" onclick="insertText('.')">.</button>
-        <button class="tool-btn" onclick="insertText('\"')">"</button>
         <button class="tool-btn" onclick="insertText('=')">=</button>
+        <button class="tool-btn" onclick="insertText('\"')">"</button>
+        <button class="tool-btn" onclick="insertText('{')">{</button>
+        <button class="tool-btn" onclick="insertText('}')">}</button>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/vs/loader.min.js"></script>
@@ -71,13 +84,19 @@
 
         function saveKey() {
             const key = document.getElementById('apiKeyInput').value;
-            if(key) { localStorage.setItem('moon_editor_api_key', key); location.reload(); }
+            if(key) { localStorage.setItem('moon_editor_api_key', key); alert("تم الحفظ!"); location.reload(); }
         }
 
         require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/vs' }});
         require(['vs/editor/editor.main'], function() {
             window.editor = monaco.editor.create(document.getElementById('editor'), {
-                value: "-- Moon Editor\n", language: 'lua', theme: 'vs-dark', automaticLayout: true, fontSize: 14, minimap: { enabled: false }
+                value: "-- Moon Editor\n-- اكتب كودك هنا\n\n",
+                language: 'lua',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                fontSize: 16, // كبرنا الخط عشان الآيباد
+                minimap: { enabled: false },
+                wordWrap: "on" // الأسطر تنزل تحت تلقائياً عشان ما تخرج برا الشاشة
             });
         });
 
@@ -91,13 +110,16 @@
 
         function toggleAI() {
             const side = document.getElementById('aiSidebar');
-            side.style.display = side.style.display === 'none' ? 'flex' : 'none';
+            side.style.display = (side.style.display === 'none') ? 'flex' : 'none';
+            window.editor.layout(); // تحديث حجم المحرر بعد إخفاء القائمة
         }
 
         async function generateCode() {
             if(!savedKey) return alert("احفظ المفتاح!");
             const p = document.getElementById('prompt').value;
+            const s = document.getElementById('status');
             if(!p) return;
+            s.innerText = "جاري التوليد...";
             try {
                 const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                     method: "POST", headers: { "Authorization": `Bearer ${savedKey}`, "Content-Type": "application/json" },
@@ -106,7 +128,8 @@
                 const d = await res.json();
                 const code = d.choices[0].message.content.replace(/```lua|```/g, "");
                 window.editor.setValue(window.editor.getValue() + "\n" + code);
-            } catch (e) { alert("خطأ!"); }
+                s.innerText = "تم! ✅";
+            } catch (e) { s.innerText = "خطأ!"; }
         }
 
         function copyAll() { navigator.clipboard.writeText(window.editor.getValue()); alert("تم النسخ!"); }
