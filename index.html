@@ -3,136 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Moon Editor | 🌙</title>
+    <title>Moon Editor | 🌙 Smart IDE</title>
     <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/vs/editor/editor.main.min.css">
     <style>
-        :root { --bg: #0b0e14; --side: #151921; --accent: #3498db; --text: #e0e0e0; }
+        :root { --bg: #0b0e14; --accent: #3498db; --text: #e0e0e0; }
         * { box-sizing: border-box; }
         body { margin: 0; background: var(--bg); color: var(--text); font-family: sans-serif; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
         
-        .navbar { height: 45px; background: var(--side); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #2d3436; flex-shrink: 0; }
-        .logo { font-weight: bold; color: #fff; font-size: 14px; }
+        /* الهيدر */
+        .navbar { height: 45px; background: #151921; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #2d3436; }
+        .logo { font-weight: bold; font-size: 14px; color: #fff; }
 
-        .main-container { display: flex; flex: 1; overflow: hidden; position: relative; flex-direction: row; }
-        #editor { flex: 1; width: 100%; height: 100%; }
+        /* منطقة العمل */
+        .editor-container { flex: 1; width: 100%; position: relative; }
+        #editor { width: 100%; height: 100%; }
 
-        /* تعديل لوحة الـ AI لتكون جانبية في البي سي وسفلية في الجوال */
-        .ai-sidebar { width: 300px; background: var(--side); display: flex; flex-direction: column; padding: 12px; border-left: 1px solid #2d3436; flex-shrink: 0; overflow-y: auto; }
+        /* لوحة التحكم السفلية (الذكاء الاصطناعي) */
+        .ai-panel { background: #151921; border-top: 1px solid #2d3436; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .ai-input { width: 100%; background: #0b0e14; color: #fff; border: 1px solid #3d444d; border-radius: 8px; padding: 12px; font-size: 14px; outline: none; }
         
-        input, textarea { width: 100%; background: #0b0e14; color: #fff; border: 1px solid #3d444d; border-radius: 6px; padding: 10px; margin-bottom: 8px; font-size: 14px; outline: none; }
-        button { width: 100%; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 5px; font-size: 13px; }
-        
-        .gen { background: var(--accent); color: white; }
-        .copy { background: #27ae60; color: white; }
-        #status { font-size: 11px; text-align: center; color: #888; }
+        .btn-row { display: flex; gap: 8px; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; color: white; transition: 0.2s; }
+        .fix-btn { background: var(--accent); }
+        .copy-btn { background: #27ae60; }
+        button:active { transform: scale(0.95); }
 
-        /* شريط الرموز السريع */
-        .toolbar { display: flex; background: #1e1e1e; padding: 5px; gap: 8px; overflow-x: auto; border-top: 1px solid #333; flex-shrink: 0; }
-        .tool-btn { background: #333; color: white; padding: 8px 15px; border-radius: 5px; font-size: 16px; border: none; font-family: monospace; }
-
-        /* أهم جزء: استجابة الآيباد والجوال */
-        @media (max-width: 900px) {
-            .main-container { flex-direction: column; } /* ترتيب عمودي */
-            .ai-sidebar { 
-                width: 100%; 
-                height: 220px; /* طول ثابت للـ AI عشان ما يغطي الشاشة */
-                border-left: none; 
-                border-top: 1px solid #2d3436; 
-                order: 2; /* الـ AI تحت */
-            }
-            #editor { order: 1; flex: 1; } /* المحرر فوق وياخذ باقي المساحة */
-        }
+        /* شريط الأدوات السريع فوق الكيبورد */
+        .toolbar { display: flex; background: #1e1e1e; padding: 5px; gap: 5px; overflow-x: auto; border-top: 1px solid #333; }
+        .tool-btn { background: #333; color: white; padding: 8px 15px; border-radius: 5px; font-size: 16px; border: none; min-width: 45px; }
     </style>
 </head>
 <body>
 
     <div class="navbar">
-        <div style="color:var(--accent); cursor:pointer; font-size: 20px;" onclick="toggleAI()">≡</div>
+        <div style="font-size: 10px; color: #888;">Zero Dev Mode</div>
         <div class="logo">🌙 MOON EDITOR</div>
-        <div id="api-indicator" style="font-size: 10px; color: #ff4757;">⚠️</div>
+        <div id="status-icon" style="color: #ff4757;">●</div>
     </div>
 
-    <div class="main-container">
+    <div class="editor-container">
         <div id="editor"></div>
-
-        <div class="ai-sidebar" id="aiSidebar">
-            <input type="password" id="apiKeyInput" placeholder="أدخل API Key...">
-            <button style="font-size:10px; background:#444; color:#ccc; padding: 5px;" onclick="saveKey()">حفظ المفتاح 💾</button>
-            <textarea id="prompt" rows="2" placeholder="اطلب كود (مثلاً: كود طيران)"></textarea>
-            <button class="gen" onclick="generateCode()">توليد ✨</button>
-            <button class="copy" onclick="copyAll()">نسخ 📋</button>
-            <p id="status">جاهز</p>
-        </div>
     </div>
 
     <div class="toolbar">
         <button class="tool-btn" onclick="insertText('\t')">TAB</button>
-        <button class="tool-btn" onclick="insertText('(')">(</button>
-        <button class="tool-btn" onclick="insertText(')')">)</button>
         <button class="tool-btn" onclick="insertText(':')">:</button>
         <button class="tool-btn" onclick="insertText('.')">.</button>
+        <button class="tool-btn" onclick="insertText('(')">(</button>
+        <button class="tool-btn" onclick="insertText(')')">)</button>
         <button class="tool-btn" onclick="insertText('=')">=</button>
         <button class="tool-btn" onclick="insertText('\"')">"</button>
-        <button class="tool-btn" onclick="insertText('{')">{</button>
-        <button class="tool-btn" onclick="insertText('}')">}</button>
+    </div>
+
+    <div class="ai-panel">
+        <input type="text" id="aiCommand" class="ai-input" placeholder="اطلب تعديل (مثلاً: صلح الأخطاء، أو كمل الكود)">
+        <div class="btn-row">
+            <button class="fix-btn" onclick="processAI()">تعديل ذكي ✨</button>
+            <button class="copy-btn" onclick="copyAll()">نسخ الكود 📋</button>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/vs/loader.min.js"></script>
     <script>
-        let savedKey = localStorage.getItem('moon_editor_api_key') || "";
-        if(savedKey) { document.getElementById('api-indicator').innerText = "AI Ready ✅"; document.getElementById('api-indicator').style.color = "#2ed573"; }
-
-        function saveKey() {
-            const key = document.getElementById('apiKeyInput').value;
-            if(key) { localStorage.setItem('moon_editor_api_key', key); alert("تم الحفظ!"); location.reload(); }
-        }
+        const API_KEY = localStorage.getItem('moon_editor_api_key') || "";
+        if(API_KEY) document.getElementById('status-icon').style.color = "#2ed573";
 
         require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/vs' }});
         require(['vs/editor/editor.main'], function() {
             window.editor = monaco.editor.create(document.getElementById('editor'), {
-                value: "-- Moon Editor\n-- اكتب كودك هنا\n\n",
+                value: "-- اكتب أو ألصق كودك هنا\nlocal part = Instance.new(\"Part\")\n",
                 language: 'lua',
                 theme: 'vs-dark',
                 automaticLayout: true,
-                fontSize: 16, // كبرنا الخط عشان الآيباد
+                fontSize: 16,
                 minimap: { enabled: false },
-                wordWrap: "on" // الأسطر تنزل تحت تلقائياً عشان ما تخرج برا الشاشة
+                wordWrap: "on",
+                suggestOnTriggerCharacters: true,
+                acceptSuggestionOnEnter: "on"
+            });
+
+            // نظام الاقتراحات الذكي (Autocomplete)
+            monaco.languages.registerCompletionItemProvider('lua', {
+                provideCompletionItems: (model, position) => {
+                    const word = model.getWordUntilPosition(position);
+                    const range = {
+                        startLineNumber: position.lineNumber,
+                        endLineNumber: position.lineNumber,
+                        startColumn: word.startColumn,
+                        endColumn: word.endColumn
+                    };
+                    const suggestions = [
+                        { label: 'game', kind: monaco.languages.CompletionItemKind.Variable, insertText: 'game', range: range },
+                        { label: 'workspace', kind: monaco.languages.CompletionItemKind.Variable, insertText: 'workspace', range: range },
+                        { label: 'Instance.new', kind: monaco.languages.CompletionItemKind.Function, insertText: 'Instance.new("${1:Part}", workspace)', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range: range },
+                        { label: 'GetService', kind: monaco.languages.CompletionItemKind.Method, insertText: 'GetService("${1:Service}")', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range: range },
+                        { label: 'Players', kind: monaco.languages.CompletionItemKind.Module, insertText: 'Players', range: range },
+                        { label: 'LocalPlayer', kind: monaco.languages.CompletionItemKind.Property, insertText: 'LocalPlayer', range: range },
+                        { label: 'Connect', kind: monaco.languages.CompletionItemKind.Event, insertText: 'Connect(function(${1:hit})\n\t$0\nend)', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range: range },
+                        { label: 'wait', kind: monaco.languages.CompletionItemKind.Function, insertText: 'task.wait(${1:1})', insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet, range: range }
+                    ];
+                    return { suggestions: suggestions };
+                }
             });
         });
 
-        function insertText(text) {
+        async function processAI() {
+            const command = document.getElementById('aiCommand').value;
+            const currentCode = window.editor.getValue();
+            if(!API_KEY) return alert("سجل الـ API Key أولاً!");
+            if(!command) return alert("اكتب وش تبي الـ AI يسوي بالكود");
+
+            document.querySelector('.fix-btn').innerText = "جاري العمل...";
+            try {
+                const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${API_KEY}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        model: "llama-3.3-70b-versatile",
+                        messages: [
+                            { role: "system", content: "You are a Luau expert. Fix, complete, or modify the code based on the user's request. Return ONLY the code without backticks." },
+                            { role: "user", content: `Command: ${command}\n\nCode:\n${currentCode}` }
+                        ]
+                    })
+                });
+                const d = await res.json();
+                window.editor.setValue(d.choices[0].message.content.trim());
+                document.getElementById('aiCommand').value = "";
+            } catch (e) { alert("خطأ!"); }
+            document.querySelector('.fix-btn').innerText = "تعديل ذكي ✨";
+        }
+
+        function insertText(t) {
             const selection = window.editor.getSelection();
-            const id = { major: 1, minor: 1 };
-            const op = { identifier: id, range: selection, text: text, forceMoveMarkers: true };
-            window.editor.executeEdits("my-source", [op]);
+            window.editor.executeEdits("src", [{ range: selection, text: t, forceMoveMarkers: true }]);
             window.editor.focus();
         }
 
-        function toggleAI() {
-            const side = document.getElementById('aiSidebar');
-            side.style.display = (side.style.display === 'none') ? 'flex' : 'none';
-            window.editor.layout(); // تحديث حجم المحرر بعد إخفاء القائمة
+        function copyAll() {
+            navigator.clipboard.writeText(window.editor.getValue());
+            alert("تم نسخ الكود!");
         }
-
-        async function generateCode() {
-            if(!savedKey) return alert("احفظ المفتاح!");
-            const p = document.getElementById('prompt').value;
-            const s = document.getElementById('status');
-            if(!p) return;
-            s.innerText = "جاري التوليد...";
-            try {
-                const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                    method: "POST", headers: { "Authorization": `Bearer ${savedKey}`, "Content-Type": "application/json" },
-                    body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{ role: "system", content: "Roblox Luau expert. Code only." }, { role: "user", content: p }] })
-                });
-                const d = await res.json();
-                const code = d.choices[0].message.content.replace(/```lua|```/g, "");
-                window.editor.setValue(window.editor.getValue() + "\n" + code);
-                s.innerText = "تم! ✅";
-            } catch (e) { s.innerText = "خطأ!"; }
-        }
-
-        function copyAll() { navigator.clipboard.writeText(window.editor.getValue()); alert("تم النسخ!"); }
     </script>
 </body>
 </html>
