@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Moon Editor | 🌙 Fix View</title>
+    <title>Moon Editor | 🌙 View Fix</title>
     <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/vs/editor/editor.main.min.css">
     <style>
-        :root { --bg: #0b0e14; --accent: #3498db; --side: #1c232d; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root { --bg: #0b0e14; --accent: #3498db; }
+        * { box-sizing: border-box; }
         
         body { 
             margin: 0; background: var(--bg); color: white; 
@@ -15,131 +15,138 @@
             display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* الهيدر صغرناه عشان نعطي مساحة */
-        .navbar { height: 40px; background: var(--side); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #333; flex-shrink: 0; }
-        .logo { font-weight: bold; font-size: 12px; color: var(--accent); }
+        /* الهيدر */
+        .navbar { height: 40px; background: #1a1f26; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #333; flex-shrink: 0; }
+        .logo { font-weight: bold; font-size: 14px; color: var(--accent); letter-spacing: 2px; }
 
-        /* منطقة المحرر - جعلناها مرنة جداً */
-        .editor-wrapper { flex: 1; position: relative; width: 100%; background: var(--bg); display: flex; flex-direction: column; }
-        #editor { flex: 1; width: 100%; height: 100%; }
-
-        /* شريط الأدوات السريع (مهم جداً للرؤية) */
-        .toolbar { 
-            display: flex; background: #252526; padding: 5px; gap: 5px; 
-            overflow-x: auto; border-top: 1px solid #444; flex-shrink: 0;
-            white-space: nowrap; -webkit-overflow-scrolling: touch;
+        /* منطقة المحرر - أعطيناها الأولوية القصوى */
+        .editor-frame { 
+            flex: 1; 
+            position: relative; 
+            width: 100%; 
+            background: #000; 
+            z-index: 1; /* لضمان ظهوره فوق الخلفية */
         }
-        .tool-btn { background: #3e3e3e; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-size: 18px; font-family: monospace; }
+        #editor { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
 
-        /* لوحة التحكم السفلية */
-        .ai-panel { background: var(--side); padding: 10px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
-        .ai-input { width: 100%; background: #0b0e14; color: white; border: 1px solid #444; border-radius: 8px; padding: 12px; font-size: 15px; outline: none; }
+        /* شريط الأدوات السريع */
+        .toolbar { 
+            display: flex; background: #1e1e1e; padding: 8px; gap: 6px; 
+            overflow-x: auto; border-top: 1px solid #444; flex-shrink: 0; z-index: 10;
+        }
+        .tool-btn { background: #333; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 18px; font-weight: bold; }
+
+        /* لوحة التحكم - جعلناها نحيفة لترك مساحة للكود */
+        .control-panel { 
+            background: #151921; padding: 12px; 
+            display: flex; flex-direction: column; gap: 10px; 
+            flex-shrink: 0; border-top: 2px solid var(--accent); z-index: 10;
+        }
+        .ai-box { 
+            width: 100%; background: #000; color: #00ff00; 
+            border: 1px solid #444; border-radius: 8px; 
+            padding: 12px; font-size: 16px; outline: none; 
+        }
         
-        .btn-row { display: flex; gap: 8px; }
-        .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; color: white; cursor: pointer; }
-        .btn-blue { background: var(--accent); }
-        .btn-green { background: #27ae60; }
+        .btns { display: flex; gap: 10px; }
+        .b { flex: 1; padding: 15px; border: none; border-radius: 8px; font-weight: bold; color: white; font-size: 16px; }
+        .b-ai { background: var(--accent); }
+        .b-copy { background: #27ae60; }
 
-        /* حل مشكلة الاختفاء خلف الكيبورد في الآيباد */
-        @media (max-width: 1024px) {
-            .editor-wrapper { height: auto; min-height: 200px; }
+        /* منع اختفاء الكود في الجوال */
+        @media (max-width: 768px) {
+            .editor-frame { min-height: 50vh; }
         }
     </style>
 </head>
 <body>
 
     <div class="navbar">
-        <div style="font-size: 10px;">Zero Dev</div>
         <div class="logo">🌙 MOON EDITOR</div>
-        <div id="api-stat" style="color: #ff4757;">●</div>
     </div>
 
-    <div class="editor-wrapper">
+    <div class="editor-frame">
         <div id="editor"></div>
     </div>
 
     <div class="toolbar">
-        <button class="tool-btn" onclick="insertText('\t')">⇥</button>
-        <button class="tool-btn" onclick="insertText(':')">:</button>
-        <button class="tool-btn" onclick="insertText('.')">.</button>
-        <button class="tool-btn" onclick="insertText('(')">(</button>
-        <button class="tool-btn" onclick="insertText(')')">)</button>
-        <button class="tool-btn" onclick="insertText('\"')">"</button>
-        <button class="tool-btn" onclick="insertText('=')">=</button>
-        <button class="tool-btn" onclick="insertText('[')">[</button>
-        <button class="tool-btn" onclick="insertText(']')">]</button>
+        <button class="tool-btn" onclick="add('\t')">TAB</button>
+        <button class="tool-btn" onclick="add(':')">:</button>
+        <button class="tool-btn" onclick="add('.')">.</button>
+        <button class="tool-btn" onclick="add('(')">(</button>
+        <button class="tool-btn" onclick="add(')')">)</button>
+        <button class="tool-btn" onclick="add('=')">=</button>
+        <button class="tool-btn" onclick="add('\"')">"</button>
     </div>
 
-    <div class="ai-panel">
-        <input type="text" id="cmd" class="ai-input" placeholder="وش نعدل في الكود؟">
-        <div class="btn-row">
-            <button class="btn btn-blue" onclick="runSmartAI()">تعديل ذكي ✨</button>
-            <button class="btn btn-green" onclick="copy()">نسخ 📋</button>
+    <div class="control-panel">
+        <input type="text" id="aiCmd" class="ai-box" placeholder="اطلب تعديل.. (مثلاً: صلح الكود)">
+        <div class="btns">
+            <button class="b b-ai" onclick="fix()">تعديل ذكي ✨</button>
+            <button class="b b-copy" onclick="cp()">نسخ 📋</button>
         </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/vs/loader.min.js"></script>
     <script>
-        const KEY = localStorage.getItem('moon_editor_api_key') || "";
-        if(KEY) document.getElementById('api-stat').style.color = "#2ed573";
+        const API_KEY = localStorage.getItem('moon_editor_api_key') || "";
 
         require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/vs' }});
         require(['vs/editor/editor.main'], function() {
             window.editor = monaco.editor.create(document.getElementById('editor'), {
-                value: "-- الصق الكود هنا وجرب التعديل\n",
+                value: "-- الكود سيظهر هنا بوضوح\nprint('Moon Editor Active')\n\n",
                 language: 'lua',
                 theme: 'vs-dark',
                 automaticLayout: true,
-                fontSize: 17, // خط كبير وواضح
+                fontSize: 18,
                 wordWrap: "on",
                 lineNumbers: "on",
-                minimap: { enabled: false },
                 scrollBeyondLastLine: false,
-                fixedOverflowWidgets: true, // يمنع القوائم من الخروج برا الشاشة
-                contextmenu: false // يعطل قائمة اليمين اللي تخرب في اللمس
+                minimap: { enabled: false }
             });
 
-            // يخلي الصفحة تنزل للسطر اللي تكتب فيه تلقائياً
-            window.editor.onDidChangeCursorPosition((e) => {
-                window.editor.revealPositionInCenterIfOutsideViewport(e.position);
-            });
+            // تحديث الحجم فوراً عند الفتح
+            setTimeout(() => { window.editor.layout(); }, 500);
         });
 
-        async function runSmartAI() {
-            const prompt = document.getElementById('cmd').value;
+        async function fix() {
+            const cmd = document.getElementById('aiCmd').value;
             const code = window.editor.getValue();
-            if(!KEY) return alert("سجل المفتاح أولاً");
-            if(!prompt) return;
+            if(!API_KEY) return alert("سجل المفتاح أولاً");
+            if(!cmd) return;
 
-            document.querySelector('.btn-blue').innerText = "...";
+            document.querySelector('.b-ai').innerText = "جاري الإصلاح...";
             try {
                 const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                     method: "POST",
-                    headers: { "Authorization": `Bearer ${KEY}`, "Content-Type": "application/json" },
+                    headers: { "Authorization": `Bearer ${API_KEY}`, "Content-Type": "application/json" },
                     body: JSON.stringify({
                         model: "llama-3.3-70b-versatile",
                         messages: [
-                            { role: "system", content: "You are a Luau assistant. Rewrite or fix the code. Output ONLY the code." },
-                            { role: "user", content: `Request: ${prompt}\n\nCode:\n${code}` }
+                            { role: "system", content: "You are a Luau expert. Fix or modify the code. Return ONLY the code." },
+                            { role: "user", content: `Command: ${cmd}\n\nCode:\n${code}` }
                         ]
                     })
                 });
                 const d = await res.json();
                 window.editor.setValue(d.choices[0].message.content.trim());
             } catch (e) { alert("Error"); }
-            document.querySelector('.btn-blue').innerText = "تعديل ذكي ✨";
+            document.querySelector('.b-ai').innerText = "تعديل ذكي ✨";
         }
 
-        function insertText(t) {
+        function add(t) {
             const sel = window.editor.getSelection();
             window.editor.executeEdits("", [{ range: sel, text: t, forceMoveMarkers: true }]);
             window.editor.focus();
         }
 
-        function copy() {
+        function cp() {
             navigator.clipboard.writeText(window.editor.getValue());
             alert("تم النسخ!");
         }
+
+        // تحديث الحجم عند تدوير الآيباد
+        window.addEventListener('resize', () => { window.editor.layout(); });
     </script>
 </body>
 </html>
